@@ -1,5 +1,4 @@
 use core::fmt;
-use std::fmt::format;
 use std::{error::Error, fs::File};
 use std::io::{self, BufRead, BufReader};
 
@@ -8,10 +7,16 @@ use clap::{App, Arg};
 type MyResult<T> = Result<T, Box<dyn Error>>;
 
 #[derive(Debug)]
+enum PrintMode {
+    Normal,
+    PrintAll,
+    PrintNonblank,
+}
+
+#[derive(Debug)]
 pub struct Config {
     files: Vec<String>,
-    number_lines: bool,
-    number_nonblank_lines: bool,
+    print_mode: PrintMode,
 }
 
 #[derive(Debug)]
@@ -63,8 +68,14 @@ pub fn get_args() -> MyResult<Config> {
 
     Ok(Config {
         files: matches.values_of_lossy("files").unwrap(),
-        number_lines: matches.is_present("number_lines"),
-        number_nonblank_lines: matches.is_present("number_nonblank")
+        print_mode:
+            if matches.is_present("number_lines") {
+                PrintMode::PrintAll
+            } else if matches.is_present("number_nonblank") {
+                PrintMode::PrintNonblank
+            } else {
+                PrintMode::Normal
+            }
     })
 }
 
@@ -99,21 +110,25 @@ pub fn run(config: Config) -> MyResult<()> {
 fn cat_file(config: &Config, bufreader: Box<dyn BufRead>) -> MyResult<()> {
     let mut i = 1;
     for line in bufreader.lines() {
-        if config.number_lines {
-            let header = format!("{:>6}", i);
-            println!("{}\t{}", header, line.unwrap());
-            i += 1;
-        } else if config.number_nonblank_lines {
-            let line = line.unwrap();
-            if line.is_empty() {
-                println!("");
-            } else {
+        let line = line.unwrap();
+        match config.print_mode {
+            PrintMode::Normal => {
+                println!("{}", line);
+            }
+            PrintMode::PrintAll => {
                 let header = format!("{:>6}", i);
                 println!("{}\t{}", header, line);
                 i += 1;
             }
-        } else {
-            println!("{}", line.unwrap());
+            PrintMode::PrintNonblank => {
+                if line.is_empty() {
+                    println!("");
+                } else {
+                    let header = format!("{:>6}", i);
+                    println!("{}\t{}", header, line);
+                    i += 1;
+                }
+            }
         }
     }
 
