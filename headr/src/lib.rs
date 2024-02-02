@@ -124,11 +124,13 @@ fn print_head(filename: &str, mut buf_reader: Box<dyn BufRead>, print_mode: &Pri
             }
         },
         PrintMode::ByteMode(n) => {
-            let mut handle = buf_reader.take(*n as u64);
-            let mut buffer = vec![0; *n];
-            let bytes_read = handle.read(&mut buffer)
-                .expect("error while reading bytes from files");
-            print!("{}", String::from_utf8_lossy(&buffer[..bytes_read]));
+            // let mut handle = buf_reader.take(*n as u64);
+            // let mut buffer = vec![0; *n];
+            // let bytes_read = handle.read(&mut buffer)
+            //     .expect("error while reading bytes from files");
+            // print!("{}", String::from_utf8_lossy(&buffer[..bytes_read]));
+            let bytes  = buf_reader.bytes().take(*n).collect::<Result<Vec<_>, _>>().expect("error while reading bytes");
+            print!("{}", String::from_utf8_lossy(&bytes))
         }
     }
 
