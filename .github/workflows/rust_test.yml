@@ -1,0 +1,36 @@
+name: Rust Test
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches:
+      - '**'
+    paths:
+      # ** はディレクトリを超えてマッチングする
+      - '**/Cargo.toml'
+      - '**/src/**'
+      - '**/tests/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+
+    - name: Find and Test All Rust Projects
+      run: |
+        for dir in $(find . -name Cargo.toml -exec dirname {} \;); do
+          echo "Testing in $dir"
+          (cd $dir && cargo test) || exit 1
+        done
+            
+            
+        
