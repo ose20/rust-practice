@@ -1,9 +1,65 @@
 use std::{error::Error, fs::File, io::{self, BufRead, BufReader}, ops::{Add, AddAssign}};
 
-use clap::{App, Arg};
+use clap::Parser;
 
 
 type MyResult<T> = Result<T, Box<dyn Error>>;
+
+#[derive(Parser, Debug)]
+struct Args {
+    /// Input file(s) [default is stdin if not specified]
+    #[arg(value_name = "FILE")]
+    files: Option<Vec<String>>,
+
+    /// Show line count
+    #[arg(short, long)]
+    lines: bool,
+
+    /// Show word count
+    #[arg(short, long)]
+    words: bool,
+
+    /// Show byte count
+    #[arg(short = 'c', long)]
+    bytes: bool,
+
+    /// Show character count
+    #[arg(short('m'), long, conflicts_with("bytes"))]
+    chars: bool,
+}
+
+impl Args {
+    fn to_config(self) -> Config {
+        match (self.lines, self.words, self.bytes, self.chars) {
+            (false, false, false, false) => Config {
+                files: self.files,
+                lines: true,
+                words: true,
+                bytes_or_chars: ByteOrChar::Byte,
+            },
+            // (bytes, chars) の4パターンで総当たり
+            (lines, words, true, false) => Config {
+                files: self.files,
+                lines,
+                words,
+                bytes_or_chars: ByteOrChar::Byte,
+            },
+            (lines, words, false, true) => Config {
+                files: self.files,
+                lines,
+                words,
+                bytes_or_chars: ByteOrChar::Char,
+            },
+            (lines, words, false, false) => Config {
+                files: self.files,
+                lines,
+                words,
+                bytes_or_chars: ByteOrChar::None,
+            },
+            _ => unreachable!("words and bytes option can't set together")
+        }
+    }
+}
 
 #[derive(Debug)]
 enum ByteOrChar {
@@ -23,8 +79,6 @@ pub struct Config {
     words: bool,
     bytes_or_chars: ByteOrChar
 }
-
-
 
 #[derive(Debug, PartialEq)]
 pub struct FileInfo {
@@ -68,80 +122,7 @@ impl FileInfo {
 }
 
 pub fn get_args() -> MyResult<Config> {
-    let matches = App::new("wcr")
-        .version("0.1.0")
-        .author("ose20 <ose20dive@gmail.com>")
-        .about("Rust wc")
-        .arg(
-            Arg::with_name("files")
-            .value_name("FILE")
-            .help("Input file(s)")
-            .multiple(true)
-        )
-        .arg(
-            Arg::with_name("lines")
-            .short("l")
-            .long("lines")
-            .help("Show line count")
-            .takes_value(false)
-        )
-        .arg(
-            Arg::with_name("words")
-            .short("w")
-            .long("words")
-            .help("Show word count")
-            .takes_value(false)
-        )
-        .arg(
-            Arg::with_name("bytes")
-            .short("c")
-            .long("bytes")
-            .help("Show byte count")
-            .takes_value(false)
-        )
-        .arg(
-            Arg::with_name("chars")
-            .short("m")
-            .long("chars")
-            .help("Show character count")
-            .conflicts_with("bytes")
-            .takes_value(false)
-        )
-        .get_matches();
-
-    let files = matches.values_of_lossy("files");
-    let config = match (matches.is_present("lines"), matches.is_present("words"), matches.is_present("bytes"), matches.is_present("chars")) {
-        (false, false, false, false) => Config {
-            files,
-            lines: true,
-            words: true,
-            bytes_or_chars: ByteOrChar::Byte,
-        },
-        // (bytes, chars) の4パターンで総当たり
-        (lines, words, true, false) => Config {
-            files,
-            lines,
-            words,
-            bytes_or_chars: ByteOrChar::Byte,
-
-        },
-        (lines, words, false, true) => Config {
-            files,
-            lines,
-            words,
-            bytes_or_chars: ByteOrChar::Char
-        },
-        (lines, words, false, false) => Config {
-            files,
-            lines,
-            words,
-            bytes_or_chars: ByteOrChar::None,
-
-        },
-        (_, _, true, true) => panic!("words option conflicts with bytes"),
-    };
-
-    Ok(config)
+    Ok(Args::parse().to_config())
 }
 
 fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
