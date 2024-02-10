@@ -7,10 +7,12 @@ use clap::{Parser, ValueEnum};
 type MyResult<T> = Result<T, Box<dyn Error>>;
 
 #[derive(Parser, Debug)]
-pub struct Config {
-    #[arg(help = "Input files")]
-    files: Vec<String>,
+#[command(about = "something like cat command")]
+pub struct Arg {
+    #[arg(help = "The files to output (default is stdin if not specified)")]
+    files: Option<Vec<String>>,
 
+    /// Output format
     #[arg(
         short = 'm',
         long = "mode",
@@ -21,11 +23,38 @@ pub struct Config {
     print_mode: PrintMode,
 }
 
+impl Arg {
+    // parse した arg を config に変換する
+    fn to_config(self) -> Config {
+        Config {
+            input: {
+                match self.files {
+                    None => Input::Stdin,
+                    Some(files) => Input::Files(files),
+                }
+            },
+            print_mode: self.print_mode,
+        }
+    }
+}
+
+
 #[derive(ValueEnum, Clone, Debug, Eq, PartialEq)]
 enum PrintMode {
     Normal,
     Number,
     NumberAndNonblank,
+}
+
+pub struct Config {
+    input: Input,
+
+    print_mode: PrintMode,
+}
+
+enum Input {
+    Stdin,
+    Files(Vec<String>)
 }
 
 
@@ -47,32 +76,51 @@ impl Error for FileOpenError {
     }
 }
 
-pub fn get_args() -> MyResult<Config> {
-    Ok(Config::parse())
+pub fn get_config() -> MyResult<Config> {
+    Ok(Arg::parse().to_config())
 }
 
-fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
-    match filename {
-        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
-        _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
+// None なら stdin、 Some(file) なら file への buf_reader を返す
+fn open(input: Option<&str>) -> MyResult<Box<dyn BufRead>> {
+    match input {
+        None => Ok(Box::new(BufReader::new(io::stdin()))),
+        Some(filename) => Ok(Box::new(BufReader::new(File::open(filename)?))),
     }
 }
 
 pub fn run(config: Config) -> MyResult<()> {
     let mut err_flg = false;
 
-    for filename in &config.files {
-        match open(filename) {
-            Err(err) => {
-                eprintln!("Failed to open {}: {}", filename, err);
-                err_flg = true;
-            },
-            Ok(bufreader) => cat_file(&config, bufreader)?,
+    match &config.input {
+        Input::Stdin => {
+            match open(None) {
+                Err(err) => {
+                    eprintln!("Failed to open stdin: {}", err);
+                    err_flg = true;
+                },
+                Ok(buf_reader) => cat_file(&config, buf_reader)?
+            }
+        }
+        Input::Files(files) => {
+            for filename in files {
+                match open(Some(filename)) {
+                    Err(err) => {
+                        eprintln!("Failed to open {}: {}", filename, err);
+                        err_flg = true;
+                    },
+                    Ok(buf_reader) => {
+                        cat_file(&config, buf_reader)?
+                    }
+                }
+            }
+
         }
     }
 
+
     if err_flg {
         Err(Box::new(io::Error::new(io::ErrorKind::Other, "少なくとも一つのファイルでエラーがありました")))
+        // Err(From::from("少なくとも1つのファイルでエラーがありました")) ← こっちの方が簡潔だけど、自分でエラーを定義する例として残したいので変えない
     } else {
         Ok(())
     }
