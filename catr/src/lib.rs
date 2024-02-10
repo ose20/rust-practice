@@ -2,22 +2,32 @@ use core::fmt;
 use std::{error::Error, fs::File};
 use std::io::{self, BufRead, BufReader};
 
-use clap::{App, Arg};
+use clap::{Parser, ValueEnum};
 
 type MyResult<T> = Result<T, Box<dyn Error>>;
 
-#[derive(Debug)]
-enum PrintMode {
-    Normal,
-    PrintAll,
-    PrintNonblank,
-}
-
-#[derive(Debug)]
+#[derive(Parser, Debug)]
 pub struct Config {
+    #[arg(help = "Input files")]
     files: Vec<String>,
+
+    #[arg(
+        short = 'm',
+        long = "mode",
+        value_name = "MODE",
+        default_value_t = PrintMode::Normal,
+    )]
+    #[clap(value_enum)]
     print_mode: PrintMode,
 }
+
+#[derive(ValueEnum, Clone, Debug, Eq, PartialEq)]
+enum PrintMode {
+    Normal,
+    Number,
+    NumberAndNonblank,
+}
+
 
 #[derive(Debug)]
 struct FileOpenError {
@@ -38,45 +48,7 @@ impl Error for FileOpenError {
 }
 
 pub fn get_args() -> MyResult<Config> {
-    let matches = App::new("catr")
-        .version("0.1.0")
-        .author("ose20 <ose20dive@gmail.com>")
-        .about("Rust cat")
-        .arg(
-            Arg::with_name("files")
-                .value_name("FILE")
-                .help("Input file(s)")
-                .multiple(true)
-                .default_value("-"),
-        )
-        .arg(
-            Arg::with_name("number_lines")
-                .short("n")
-                .long("number")
-                .help("number all output lines")
-                .takes_value(false)
-                .conflicts_with("number_nonblank"),
-        )
-        .arg(
-            Arg::with_name("number_nonblank")
-                .short("b")
-                .long("number-nonblank")
-                .help("number nonempty output lines")
-                .takes_value(false)
-        )
-        .get_matches();
-
-    Ok(Config {
-        files: matches.values_of_lossy("files").unwrap(),
-        print_mode:
-            if matches.is_present("number_lines") {
-                PrintMode::PrintAll
-            } else if matches.is_present("number_nonblank") {
-                PrintMode::PrintNonblank
-            } else {
-                PrintMode::Normal
-            }
-    })
+    Ok(Config::parse())
 }
 
 fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
@@ -99,7 +71,7 @@ pub fn run(config: Config) -> MyResult<()> {
         }
     }
 
-    if err_flg { 
+    if err_flg {
         Err(Box::new(io::Error::new(io::ErrorKind::Other, "少なくとも一つのファイルでエラーがありました")))
     } else {
         Ok(())
@@ -115,12 +87,12 @@ fn cat_file(config: &Config, bufreader: Box<dyn BufRead>) -> MyResult<()> {
             PrintMode::Normal => {
                 println!("{}", line);
             }
-            PrintMode::PrintAll => {
+            PrintMode::Number => {
                 let header = format!("{:>6}", i);
                 println!("{}\t{}", header, line);
                 i += 1;
             }
-            PrintMode::PrintNonblank => {
+            PrintMode::NumberAndNonblank => {
                 if line.is_empty() {
                     println!("");
                 } else {
