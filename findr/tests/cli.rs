@@ -42,14 +42,14 @@ fn dies_bad_name() -> TestResult {
         .args(&["--name", "*.csv"])
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Invalid --name \"*.csv\""));
+        .stderr(predicate::str::contains("invalid value '*.csv'"));
     Ok(())
 }
 
 // --------------------------------------------------
 #[test]
 fn dies_bad_type() -> TestResult {
-    let expected = "error: 'x' isn't a valid value for '--type <TYPE>...'";
+    let expected = "invalid value 'x' for '--type <TYPE>...'";
     Command::cargo_bin(PRG)?
         .args(&["--type", "x"])
         .assert()
@@ -128,14 +128,14 @@ fn path_a_b_d() -> TestResult {
 // --------------------------------------------------
 #[test]
 fn type_f() -> TestResult {
-    run(&["tests/inputs", "-t", "f"], "tests/expected/type_f.txt")
+    run(&["tests/inputs", "-t", "file"], "tests/expected/type_f.txt")
 }
 
 // --------------------------------------------------
 #[test]
 fn type_f_path_a() -> TestResult {
     run(
-        &["tests/inputs/a", "-t", "f"],
+        &["tests/inputs/a", "-t", "file"],
         "tests/expected/type_f_path_a.txt",
     )
 }
@@ -144,7 +144,7 @@ fn type_f_path_a() -> TestResult {
 #[test]
 fn type_f_path_a_b() -> TestResult {
     run(
-        &["tests/inputs/a/b", "--type", "f"],
+        &["tests/inputs/a/b", "--type", "file"],
         "tests/expected/type_f_path_a_b.txt",
     )
 }
@@ -153,7 +153,7 @@ fn type_f_path_a_b() -> TestResult {
 #[test]
 fn type_f_path_d() -> TestResult {
     run(
-        &["tests/inputs/d", "--type", "f"],
+        &["tests/inputs/d", "--type", "file"],
         "tests/expected/type_f_path_d.txt",
     )
 }
@@ -162,7 +162,7 @@ fn type_f_path_d() -> TestResult {
 #[test]
 fn type_f_path_a_b_d() -> TestResult {
     run(
-        &["tests/inputs/a/b", "tests/inputs/d", "--type", "f"],
+        &["tests/inputs/a/b", "tests/inputs/d", "--type", "file"],
         "tests/expected/type_f_path_a_b_d.txt",
     )
 }
@@ -170,14 +170,14 @@ fn type_f_path_a_b_d() -> TestResult {
 // --------------------------------------------------
 #[test]
 fn type_d() -> TestResult {
-    run(&["tests/inputs", "-t", "d"], "tests/expected/type_d.txt")
+    run(&["tests/inputs", "-t", "dir"], "tests/expected/type_d.txt")
 }
 
 // --------------------------------------------------
 #[test]
 fn type_d_path_a() -> TestResult {
     run(
-        &["tests/inputs/a", "-t", "d"],
+        &["tests/inputs/a", "-t", "dir"],
         "tests/expected/type_d_path_a.txt",
     )
 }
@@ -186,7 +186,7 @@ fn type_d_path_a() -> TestResult {
 #[test]
 fn type_d_path_a_b() -> TestResult {
     run(
-        &["tests/inputs/a/b", "--type", "d"],
+        &["tests/inputs/a/b", "--type", "dir"],
         "tests/expected/type_d_path_a_b.txt",
     )
 }
@@ -195,7 +195,7 @@ fn type_d_path_a_b() -> TestResult {
 #[test]
 fn type_d_path_d() -> TestResult {
     run(
-        &["tests/inputs/d", "--type", "d"],
+        &["tests/inputs/d", "--type", "dir"],
         "tests/expected/type_d_path_d.txt",
     )
 }
@@ -204,7 +204,7 @@ fn type_d_path_d() -> TestResult {
 #[test]
 fn type_d_path_a_b_d() -> TestResult {
     run(
-        &["tests/inputs/a/b", "tests/inputs/d", "--type", "d"],
+        &["tests/inputs/a/b", "tests/inputs/d", "--type", "dir"],
         "tests/expected/type_d_path_a_b_d.txt",
     )
 }
@@ -212,14 +212,14 @@ fn type_d_path_a_b_d() -> TestResult {
 // --------------------------------------------------
 #[test]
 fn type_l() -> TestResult {
-    run(&["tests/inputs", "-t", "l"], "tests/expected/type_l.txt")
+    run(&["tests/inputs", "-t", "link"], "tests/expected/type_l.txt")
 }
 
 // --------------------------------------------------
 #[test]
 fn type_f_l() -> TestResult {
     run(
-        &["tests/inputs", "-t", "l", "f"],
+        &["tests/inputs", "-t", "link", "file"],
         "tests/expected/type_f_l.txt",
     )
 }
@@ -261,7 +261,7 @@ fn name_a() -> TestResult {
 #[test]
 fn type_f_name_a() -> TestResult {
     run(
-        &["tests/inputs", "-t", "f", "-n", "a"],
+        &["tests/inputs", "-t", "file", "-n", "a"],
         "tests/expected/type_f_name_a.txt",
     )
 }
@@ -270,7 +270,7 @@ fn type_f_name_a() -> TestResult {
 #[test]
 fn type_d_name_a() -> TestResult {
     run(
-        &["tests/inputs", "--type", "d", "--name", "a"],
+        &["tests/inputs", "--type", "dir", "--name", "a"],
         "tests/expected/type_d_name_a.txt",
     )
 }
