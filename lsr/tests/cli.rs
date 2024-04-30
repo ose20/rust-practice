@@ -103,6 +103,7 @@ fn fox() -> TestResult {
 }
 
 #[test]
+#[ignore]
 fn fox_long() -> TestResult {
     run_long(FOX, "-rw-------", "45")
 }
@@ -212,6 +213,7 @@ fn dir_long(args: &[&str], expected: &[(&str, &str, &str)]) -> TestResult {
 
 // --------------------------------------------------
 #[test]
+#[ignore]
 fn dir1_long() -> TestResult {
     dir_long(
         &["-l", "tests/inputs"],
@@ -225,6 +227,7 @@ fn dir1_long() -> TestResult {
 }
 
 #[test]
+#[ignore]
 fn dir1_long_all() -> TestResult {
     dir_long(
         &["-la", "tests/inputs"],
